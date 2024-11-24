@@ -4,8 +4,8 @@
 #include "select.h"
 
 int main() {
-    Table_json json_table;
-    Parser(json_table);
+    TableJson json_table;
+    parser(json_table);
 
     string command;
     while (true) {
@@ -21,7 +21,7 @@ int main() {
             insert(command, json_table);
         }
         else if (command.find("DELETE") == 0) {
-            del(command, json_table);
+            delet(command, json_table);
         }
         else if (command.find("SELECT") == 0) {
             select(command, json_table);

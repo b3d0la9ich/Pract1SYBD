@@ -2,15 +2,15 @@
 #include <iostream>
 #include <filesystem>
 #include "rapidcsv.h" 
-#include "struct.h"
+#include "Node.h"
 
 using namespace std;
 namespace fs = filesystem;
 
-bool TableExist(const string& TableName, Node* TableHead);
-bool isloker(const string& TableName, const string& SchemaName);
+bool TableExist(const string& tableName, Node* tableHead);
+bool isloker(const string& tableName, const string& schemeName);
 void copyNameColonk(const string& from_file, const string& to_file);
-void loker(const string& TableName, const string& SchemaName);
-int findCsvFileCount(const Table_json& json_table, const string& TableName);
-void createNewCsvFile(const string& baseDir, const string& TableName, int& csvNumber, const Table_json& tableJson);
-void insert(const string& command, Table_json json_table);
+void loker(const string& tableName, const string& schemeName);
+int findCsvFileCount(const TableJson& json_table, const string& tableName);
+void createNewCsvFile(const std::string& baseDir, const std::string& tableName, int& csvNumber, const TableJson& tableJson);
+void insert(const string& command, TableJson json_table);

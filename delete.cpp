@@ -1,43 +1,46 @@
 #include "delete.h"
 
-// Функция для проверки на существование колонки
-bool ExistColonk(const string& TableName, const string& ColumnName, Node* TableHead){
-    if (!TableHead) {
-        cerr << "Error: list of table is empty" << endl;
+bool ExistColonk(const string& tableName, const string& columnName, Node* Tablehead) {
+    if (!Tablehead) {
+        cerr << "Ошибка: Список таблиц пуст.\n";
         return false;
     }
 
-    Node* currentTable = TableHead;
+    Node* currentTable = Tablehead;  // Указатель на текущую таблицу в списке
 
+    // Проходим по всем таблицам
     while (currentTable) {
-        if (currentTable->table == TableName) {
-            ListNode* currentColumn = currentTable->column;
+        if (currentTable->table == tableName) {  // Если нашли нужную таблицу
+            ListNode* currentColumn = currentTable->column;  // Указатель на первую колонку в таблице
 
+            // Проходим по всем колонкам в найденной таблице
             while (currentColumn) {
-                if (currentColumn->column_name == ColumnName){
-                    return true;
+                if (currentColumn->column_name == columnName) {  // Если нашли нужную колонку
+                    return true;  // Колонка найдена
                 }
-                currentColumn = currentColumn->next;
+                currentColumn = currentColumn->next;  // Переходим к следующей колонке
             }
 
-            cerr << "Column" << ColumnName << " didnt exist in table " << TableName << endl;
-            return false;
+            cerr << "Колонка " << columnName << " не найдена в таблице " << tableName << ".\n";
+            return false;  // Колонка не найдена в этой таблице
         }
 
-        currentTable = currentTable->next;
+        currentTable = currentTable->next;  // Переходим к следующей таблице
     }
 
-    cerr << "Table " << TableName << "didnt exist" << endl;
-    return false;
+    cerr << "Таблица " << tableName << " не найдена.\n";
+    return false;  // Таблица не найдена
 }
 
-// Функция для парсинга WHERE 
-bool parseWhereClause(istringstream& iss2, string& table, string& column, string& value, const string& TableName, const Table_json& json_table){
+
+// Функция для парсинга WHERE части команды
+bool parseWhereClause(istringstream& iss2, string& table, string& column, string& value, const string& tableName, const TableJson& json_table) {
     string indication;
     iss2 >> indication;
 
-    if (indication.find('.') == string::npos){ 
-        cerr << "Error: incorrect command1" << endl;
+    // Разделяем таблицу и колонку (table.column)
+    if (indication.find('.') == string::npos) {
+        cerr << "Некорректная команда.\n";
         return false;
     }
 
@@ -45,117 +48,126 @@ bool parseWhereClause(istringstream& iss2, string& table, string& column, string
     table = indication.substr(0, dotPos);
     column = indication.substr(dotPos + 1);
 
-    if (table != TableName) {
-        cerr << "Error: incorrect command2" << endl;
+    if (table != tableName) {
+        cerr << "Некорректная команда.\n";
         return false;
     }
 
-    if (!ExistColonk(TableName, column, json_table.table_head)) {
-        cerr << "No such column" << endl;
+    // Проверка на существование колонки
+    if (!ExistColonk(tableName, column, json_table.Tablehead)) {
+        cerr << "Такой колонки нет.\n";
         return false;
     }
 
+    // Проверка знака "="
     iss2 >> indication;
     if (indication != "=") {
-        cerr << "Error: incorrect command3" << endl;
+        cerr << "Некорректная команда.\n";
         return false;
     }
 
+    // Проверка кавычек вокруг значения
     iss2 >> value;
     if (value.front() != '\'' || value.back() != '\'') {
-        cerr << "Error: incorrect command4" << endl;
+        cerr << "Некорректная команда.\n";
         return false;
     }
 
+    // Убираем кавычки из значения
     value = value.substr(1, value.size() - 2);
     return true;
 }
 
-// Функция для удаление строк из всех csv файлов, связанных с таблицей, где значение совпадает с заданным
-bool deleteRowsFromTable(const string& TableName, const string& column, const string& value, const Table_json& json_table){
-    int amountCSV = 1;
-    bool deletedSTR = false;
 
+bool deleteRowsFromTable(const string& tableName, const string& column, const string& value, const TableJson& json_table) {
+    int amountCsv = 1;
+    bool deletedStr = false;
+
+    // Ищем все CSV файлы
     while (true) {
-        fs::path filePath = fs::path("/home/b3d0la9a/don/Pract1SYBD/") / json_table.Name / TableName / (to_string(amountCSV) + ".csv");
+        fs::path filePath = fs::path("/home/b3d0la9a/don/Pract1SYBD") / json_table.Name / tableName / (to_string(amountCsv) + ".csv");
         ifstream file(filePath);
         if (!file.is_open()) {
             break;
         }
         file.close();
-        amountCSV++;
+        amountCsv++;
     }
 
-    for (size_t icsv = 1; icsv < amountCSV; icsv++){
-        string filePath = "/home/b3d0la9a/don/Pract1SYBD/" + json_table.Name + "/" + TableName + "/" + (to_string(icsv) + ".csv");
+    // Просматриваем все CSV файлы
+    for (size_t iCsv = 1; iCsv < amountCsv; iCsv++) {
+        string filePath = "/home/b3d0la9a/don/Pract1SYBD/" + json_table.Name + "/" + tableName + "/" + (to_string(iCsv) + ".csv");
         rapidcsv::Document doc(filePath);
 
         int columnIndex = doc.GetColumnIdx(column);
         size_t amountRow = doc.GetRowCount();
 
         if (columnIndex == -1) {
-            cerr << "Error: column didnt exist in CSV: " << column << endl;
+            cerr << "Колонка не найдена в файле CSV: " << column << "\n";
             return false;
         }
 
-        for (size_t i = 0; i < amountRow;) {
+        // Ищем и удаляем строки с нужным значением
+        for (size_t i = 0; i < amountRow;) {  // Индекс не увеличивается сразу
             if (doc.GetCell<string>(columnIndex, i) == value) {
                 doc.RemoveRow(i);
-                deletedSTR = true;
-                amountRow--;
+                deletedStr = true;
+                amountRow--;  // Уменьшаем количество строк
+                // Не увеличиваем индекс i, чтобы повторно проверить строку, которая переместилась на место удалённой
             } else {
-                i++;
+                i++;  // Только увеличиваем индекс, если строка не удалена
             }
         }
-        doc.Save(filePath);
+        doc.Save(filePath);  // Сохраняем изменения в файл
     }
 
-    return deletedSTR;   
+    return deletedStr;
 }
 
-// Функция для удаления строк из таблицы
-void del(const string& command, const Table_json& json_table){
+
+void delet(const string& command, const TableJson& json_table) {
     istringstream iss(command);
     string indication;
 
-    // Проверка начало команды
+    // Проверка и разбор команды DELETE FROM
     if (!(iss >> indication && indication == "DELETE" && iss >> indication && indication == "FROM")) {
-        cerr << "Error: incorrect table" << endl;
-        return; 
-    }
-
-    // Чтение имени таблицы
-    string TableName;
-    iss >> TableName;
-    if (!TableExist(TableName, json_table.table_head)) {
-        cerr << "Error: incorrect table" << endl;
+        cerr << "Некорректная команда.\n";
         return;
     }
 
-    // Проверка на наличие "WHERE"
-    string whereCMD;
-    if (!(iss >> whereCMD && whereCMD == "WHERE")) {
-        cerr << "Error: incorrect command5" << endl;
+    string tableName;
+    iss >> tableName;
+    if (!TableExist(tableName, json_table.Tablehead)) {
+        cerr << "Такой таблицы нет.\n";
         return;
     }
 
-    
+    // Разбор второй части команды: WHERE <table.column> = '<value>'
+    string whereCmd;
+    if (!(iss >> whereCmd && whereCmd == "WHERE")) {
+        cerr << "Некорректная команда.\n";
+        return;
+    }
+
     string table, column, value;
-    if (!parseWhereClause(iss, table, column, value, TableName, json_table)) {
+    if (!parseWhereClause(iss, table, column, value, tableName, json_table)) {
+        return;  // Ошибка уже выведена в parseWhereClause
+    }
+
+    // Проверка на блокировку таблицы
+    if (isloker(tableName, json_table.Name)) {
+        cerr << "Таблица заблокирована.\n";
         return;
     }
+    loker(tableName, json_table.Name); // Блокировка таблицы
 
-    if (isloker(TableName, json_table.Name)) {
-        cerr << "Table is locked" << endl;
-        return;
-    }
-    loker(TableName, json_table.Name);
+    // Попытка удалить строки из всех CSV файлов таблицы
+    bool deletedStr = deleteRowsFromTable(tableName, column, value, json_table);
 
-    bool deletedSTR = deleteRowsFromTable(TableName, column, value, json_table);
-
-    if (!deletedSTR) {
-        cout << "This value didnt finded" << endl;
+    if (!deletedStr) {
+        cout << "Указанное значение не найдено.\n";
     }
 
-    loker(TableName, json_table.Name);
+    // Разблокировка таблицы
+    loker(tableName, json_table.Name);
 }
