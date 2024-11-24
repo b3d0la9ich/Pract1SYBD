@@ -4,10 +4,10 @@
 #include "select.h"
 
 int main() {
-    TableJson json_table;
-    parser(json_table);
+    Table_json json_table;
+    Parser(json_table);
 
-    stringcommand;
+    string command;
     while (true) {
         cout << "Введите команду:";
         getline(cin, command);
@@ -21,7 +21,7 @@ int main() {
             insert(command, json_table);
         }
         else if (command.find("DELETE") == 0) {
-            delet(command, json_table);
+            del(command, json_table);
         }
         else if (command.find("SELECT") == 0) {
             select(command, json_table);
